@@ -3,7 +3,7 @@ from typing import List
 import tabula
 import os
 import re
-import pandas as pd
+#import pandas as pd
 
 os.environ["JAVA_HOME"] = "/usr/lib/jvm/java-11-openjdk-amd64"
 
@@ -46,33 +46,21 @@ class PdfExtract(object):
         
         tabula_options = {
             "pages": pages_data,
-            "multiple_tables": True,
-            "guess": False,          
-            "lattice": True,        
-            "area": [280, 10, 1700, 800]  
-        }   
-          
+            "guess": False,
+            "lattice": True,
+            "stream": True,
+        }
         dfs = tabula.read_pdf(self.file_name, **tabula_options)
-        
-        data_list = []
-        
-        for df in dfs:
-            headers = df.iloc[0].fillna("").tolist()
-            df = df.iloc[1:].copy()                 
-            df.columns = headers
-            df = df.T
-            df.insert(0, 'Тип транспортного засобу', df.index)  
-            df = df.reset_index(drop=True)   
-            data_list.append(df)
 
-        
-        df = pd.concat(data_list, ignore_index=True)
-        
-        df.to_csv("data.csv", index=False)
-    
+        #inccorect data retrieves        
   
-      
-pdf = PdfExtract("WIM_звіт_2021_в3.pdf")
+if __name__ == "__main__":
+    """      
+    pdf = PdfExtract("WIM_звіт_2021_в3.pdf")
 
-pdf.retrieve_tables(r'Середня швидкість руху на майданчику\s*(.*?)\s*у\s*2021\s*році')
+    pdf.retrieve_tables(r'Середня швидкість руху на майданчику\s*(.*?)\s*у\s*2021\s*році')
     
+    """
+    pdf = PdfExtract("WIM_звіт_2021_в3.pdf")
+    print(pdf.retrieve_tables(r'Середня швидкість руху на майданчику\s*(.*?)\s*у\s*2021\s*році'))
+    pass
