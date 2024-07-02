@@ -4,7 +4,6 @@ from sklearn.metrics import (r2_score, mean_squared_error,
                              mean_absolute_error)
 from sklearn.impute import SimpleImputer
 import pandas as pd
-import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
 
@@ -14,19 +13,15 @@ class RoadWim(object):
     @classmethod
     def log_reg(cls, path="data.csv"):
         df = pd.read_csv(path)
-        df = df.drop('Тип транспортного засобу', axis=1)
-        
-        df = df.replace(r'^[\d+\-]*$', np.nan, regex=True) 
-
         
         x = df[['1']]  
         y = df.drop(columns=['1']) 
         
-        imputer = SimpleImputer(missing_values=np.nan, strategy='mean')
-        x_imputed = imputer.fit_transform(x)
-        y_imputed = imputer.fit_transform(y)
-        
-        x_train, x_test, y_train, y_test = train_test_split(x_imputed, y_imputed, test_size=0.35, random_state=42) 
+        imputer = SimpleImputer(strategy='mean')
+        x = imputer.fit_transform(x)
+        y = imputer.fit_transform(y)
+     
+        x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=0.35, random_state=42) 
         l = LinearRegression()
         l.fit(x_train, y_train)
         y_pred = l.predict(x_test)

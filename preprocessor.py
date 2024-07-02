@@ -1,6 +1,7 @@
 from pypdf import PdfReader
 from typing import List
 import camelot
+import pandas as pd
 import re
 
 
@@ -33,53 +34,60 @@ class PdfExtract(object):
                     page_list.append(index+1)
         return page_list
     
+    
+      
     """
-    Generate CSV file in root folder
+    Generate JSON file in root folder
     """
     
-    def retrieve_tables(self) -> List[List[List[int]]]:
+    def retrieve_tables(self) -> str:
         
+        
+        """need modify data to merge all of them 
+        for instance all rows which are fisrt must be merged with each other
+        and so on
+        """
+       
         pages_data = self._retrieve_pages(
             r'Середня швидкість руху на майданчику\s*(.*?)\s*у\s*2021\s*році'
         )
         
-        """
-        global_stack = []
+        pages = ','.join(map(str, pages_data))
+
+        tables = camelot.read_pdf("WIM_звіт_2021_в3.pdf", pages=pages)
+
+        merged_data = pd.DataFrame()
+
+        for table in tables:
+            
+            df = table.df.drop(columns=table.df.columns[:2], axis=1)
+            
+            df.reset_index(drop=True, inplace=True)
+            
+            values = df.iloc[2].values
+                        
+            concatenated_values = ' '.join(values)
+            
+            array = concatenated_values.split()
+
+            array = [0 if x == "-" else x for x in array]    
+               
+            n = 24
+
+            array = [array[i:i+n] for i in range(0, len(array), n)]
+            
+            df_v = pd.DataFrame(array)
+            
+            merged_data = pd.concat([merged_data, df_v], ignore_index=True)
         
-        for page in pages_data:
-            
-            tables = camelot.read_pdf("WIM_звіт_2021_в3.pdf", pages=str(page))
-
-            if tables:
-                
-                table = tables[0]
-
-                df = table.df.drop(columns=table.df.columns[:2], axis=1)
-
-                df.reset_index(drop=True, inplace=True)
-
-                stack = []
-
-                stack.append(df.iloc[2])
-
-                stack = [value for value in stack[0].values]
-
-                array = stack[0].split()
-
-                array = [0 if x == "-" else x for x in array]    
-            
-                n = 24
-
-                array = [array[i:i+n] for i in range(0, len(array), n)]
-
-                global_stack.append(array)
-        """
-        #return global_stack
-    
+        merged_data.to_csv("data.csv")
+        
   
 if __name__ == "__main__":
-    pdf = PdfExtract("WIM_звіт_2021_в3.pdf")
-    print("Waiting...")
-    pdf.retrieve_tables()
-    print(pdf.retrieve_tables())
     
+    """
+    pdf = PdfExtract("WIM_звіт_2021_в3.pdf")
+    print("Loading... Please, wait...")
+    print(pdf.retrieve_tables())   
+    """
+    pass
