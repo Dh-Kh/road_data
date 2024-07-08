@@ -33,61 +33,85 @@ class PdfExtract(object):
                 if "Середня швидкість руху  за проміжками часу, км/год" in text:
                     page_list.append(index+1)
         return page_list
-    
-    
+
+    def _process_row(self, row: List[str]) -> List[str]:
+
+        data = " ".join(row.astype(str)).split()
+
+        data = [0 if x == "-" else x for x in data]
+        
+        data = [x for x in data if x is not None]
+
+        data = data[:24] + [0] * (24 - len(data))
+        
+        return data
       
-    """
-    Generate JSON file in root folder
-    """
-    
     def retrieve_tables(self) -> str:
-        
-        
-        """need modify data to merge all of them 
-        for instance all rows which are fisrt must be merged with each other
-        and so on
+
         """
-       
+        calculate mean of cells from different dataframes
+        """        
+
+        correlation_matrices = [] 
+
+        
         pages_data = self._retrieve_pages(
             r'Середня швидкість руху на майданчику\s*(.*?)\s*у\s*2021\s*році'
         )
         
-        pages = ','.join(map(str, pages_data))
-
-        tables = camelot.read_pdf("WIM_звіт_2021_в3.pdf", pages=pages)
-
-        merged_data = pd.DataFrame()
-
-        for table in tables:
+        
+        for page in pages_data:
+           
+            tables = camelot.read_pdf(
+                "WIM_звіт_2021_в3.pdf", pages=str(page),
+                table_area=[180, 180, 820, 820]                      
+            )
             
-            df = table.df.drop(columns=table.df.columns[:2], axis=1)
+            
+            df = tables[0].df
+            
+            df = df.iloc[1:]
             
             df.reset_index(drop=True, inplace=True)
             
-            values = df.iloc[2].values
-                        
-            concatenated_values = ' '.join(values)
+            df = df.apply(self._process_row, axis=1, result_type='expand')
             
-            array = concatenated_values.split()
-
-            array = [0 if x == "-" else x for x in array]    
-               
-            n = 24
-
-            array = [array[i:i+n] for i in range(0, len(array), n)]
+            df = df.apply(pd.to_numeric, errors='coerce')
             
-            df_v = pd.DataFrame(array)
-            
-            merged_data = pd.concat([merged_data, df_v], ignore_index=True)
+            correlation_matrices.append(df)
         
-        merged_data.to_csv("data.csv")
+        combined_df = pd.concat(correlation_matrices, axis=0)
+        
+        mean_values = combined_df.mean(axis=0)
+        
+        result_df = mean_values.reset_index()
+        
+        result_df.columns = ["Time Interval", "Mean Speed"]
+        
+        result_df.to_csv("data.csv")
+        """
+        plus all values of rows and divide them on df length
+        """
+        
+        
+    @staticmethod
+    def plot_tables(pdf_path: str = None, pages: str = None) -> None:
+        
+        """Method to get coords"""
+        
+        if not (pdf_path, pages):
+            return
+                
+        img = camelot.read_pdf(pdf_path, pages=pages)
+        
+        for i in range(0, img.n):
+            camelot.plot(img[i], kind='grid').show()
         
   
 if __name__ == "__main__":
     
-    """
     pdf = PdfExtract("WIM_звіт_2021_в3.pdf")
     print("Loading... Please, wait...")
-    print(pdf.retrieve_tables())   
-    """
-    pass
+    pdf.retrieve_tables()   
+    print("Executed!")
+    
