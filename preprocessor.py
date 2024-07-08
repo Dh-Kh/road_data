@@ -3,7 +3,7 @@ from typing import List
 import camelot
 import pandas as pd
 import re
-
+import numpy as np
 
 class PdfExtract(object):
     
@@ -46,11 +46,7 @@ class PdfExtract(object):
         
         return data
       
-    def retrieve_tables(self) -> str:
-
-        """
-        calculate mean of cells from different dataframes
-        """        
+    def retrieve_tables(self) -> None:
 
         correlation_matrices = [] 
 
@@ -79,19 +75,19 @@ class PdfExtract(object):
             df = df.apply(pd.to_numeric, errors='coerce')
             
             correlation_matrices.append(df)
+            
+        """
+        element wise addition 
+        """
         
-        combined_df = pd.concat(correlation_matrices, axis=0)
+        result = np.add.reduce([np.array(matrix) for matrix in correlation_matrices])
         
-        mean_values = combined_df.mean(axis=0)
+        result = result // len(pages_data)
         
-        result_df = mean_values.reset_index()
-        
-        result_df.columns = ["Time Interval", "Mean Speed"]
+        result_df = pd.DataFrame(result)
         
         result_df.to_csv("data.csv")
-        """
-        plus all values of rows and divide them on df length
-        """
+        
         
         
     @staticmethod
